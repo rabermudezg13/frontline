@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Frontline WebTime Simulator – Kelly Education</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;font-size:13px;background:#f0f0f0;}
+.sim{background:#f0f0f0;min-height:100vh;}
+.screen{display:none;}
+.screen.active{display:block;}
+.fl-login-bg{background:linear-gradient(135deg,#4a2a6e 0%,#6b3fa0 60%,#4a2a6e 100%);padding:40px 16px;min-height:300px;display:flex;flex-direction:column;align-items:center;}
+.fl-logo-icon{width:38px;height:38px;background:#4ecdc4;border-radius:50% 50% 50% 0;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#fff;font-size:16px;}
+.fl-logo-area{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+.fl-logo-text{color:#fff;font-size:20px;font-weight:bold;}
+.fl-logo-sub{color:#c9b8e8;font-size:10px;display:block;}
+.fl-login-card{background:#fff;border-radius:4px;padding:28px 32px;width:100%;max-width:380px;}
+.fl-login-card h2{font-size:18px;color:#333;font-weight:normal;margin-bottom:18px;text-align:center;}
+.fl-field-label{font-size:12px;color:#555;margin-bottom:4px;display:block;}
+.fl-input{width:100%;border:1px solid #ccc;border-radius:3px;padding:8px 10px;font-size:13px;margin-bottom:14px;color:#333;}
+.fl-btn-login{width:100%;background:#5b9bd5;color:#fff;border:none;border-radius:3px;padding:10px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.fl-links{display:flex;justify-content:center;gap:16px;margin-top:14px;font-size:12px;}
+.fl-links a{color:#5b9bd5;text-decoration:underline;cursor:pointer;}
+.fl-sso{text-align:center;margin-top:12px;font-size:12px;color:#5b9bd5;text-decoration:underline;cursor:pointer;}
+.fl-org-bg{background:#4a2a6e;min-height:100vh;padding:24px 20px;}
+.fl-org-h{color:#fff;font-size:22px;font-weight:bold;margin-bottom:16px;}
+.fl-org-list{background:#5a3a80;border-radius:3px;overflow:hidden;}
+.fl-org-item{padding:16px 18px;color:#fff;border-bottom:1px solid rgba(255,255,255,0.15);cursor:pointer;font-size:14px;}
+.fl-org-item:hover,.fl-org-item.highlight{background:#6b4a90;}
+.org-notice{padding:10px 14px;font-size:12px;line-height:1.5;display:none;}
+.org-notice.miami{background:#1b3a5a;color:#a8d4f5;}
+.org-notice.kelly{background:#2a1a4a;color:#c9b8e8;}
+.org-notice-title{font-weight:bold;margin-bottom:3px;}
+.fl-loading{background:#4a2a6e;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.fl-loading-text{color:#fff;font-size:22px;font-weight:bold;}
+.fl-loading-sub{color:#c9b8e8;font-size:11px;}
+.fl-bars{display:flex;gap:4px;margin-top:8px;}
+.fl-bar{width:6px;height:20px;background:#c9b8e8;border-radius:2px;animation:barPulse 0.8s ease-in-out infinite;}
+.fl-bar:nth-child(2){animation-delay:.1s}.fl-bar:nth-child(3){animation-delay:.2s}.fl-bar:nth-child(4){animation-delay:.3s}.fl-bar:nth-child(5){animation-delay:.4s}
+@keyframes barPulse{0%,100%{opacity:.3}50%{opacity:1}}
+.fl-modal-overlay{background:#e8e8e8;padding:16px;min-height:100vh;}
+.fl-notif-modal{background:#fff;border:1px solid #ccc;border-radius:3px;overflow:hidden;max-width:700px;margin:0 auto;}
+.fl-notif-header{background:#1b4f8a;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:bold;}
+.fl-notif-close{color:#fff;cursor:pointer;font-size:16px;}
+.fl-notif-body{padding:14px;}
+.fl-notif-tag{display:inline-block;background:#f0a500;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;margin-right:8px;}
+.fl-notif-meta{display:flex;align-items:center;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:8px;flex-wrap:wrap;gap:4px;}
+.fl-notif-date{font-size:11px;color:#666;margin-left:auto;}
+.fl-notif-text{font-size:12px;color:#333;line-height:1.6;}
+.fl-notif-text .hl{background:#f5d0e0;}
+.fl-notif-footer{padding:10px 14px;text-align:right;border-top:1px solid #eee;}
+.fl-btn-dismiss{background:#fff;border:1px solid #ccc;border-radius:3px;padding:6px 16px;font-size:12px;cursor:pointer;}
+.dash-guide-banner{background:#1b4f8a;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;}
+.dash-guide-banner.hidden{display:none;}
+.dash-guide-pulse{width:10px;height:10px;border-radius:50%;background:#4ecdc4;animation:pulse 1.2s ease-in-out infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.dash-guide-dismiss{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:3px;padding:4px 12px;font-size:11px;cursor:pointer;white-space:nowrap;}
+.fl-dash{display:flex;min-height:calc(100vh - 80px);}
+.fl-sidebar{width:155px;background:#fff;border-right:1px solid #ddd;padding:16px 0;flex-shrink:0;}
+.fl-sidebar-title{font-size:10px;font-weight:bold;color:#333;padding:0 14px;margin-bottom:10px;}
+.fl-nav-item{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:12px;color:#555;cursor:pointer;border-left:3px solid transparent;}
+.fl-nav-item:hover{background:#f5f5f5;}
+.fl-nav-item.active{color:#6b3fa0;font-weight:bold;border-left:3px solid #6b3fa0;background:#f9f5ff;}
+.fl-nav-item.pulse-nav{color:#6b3fa0;font-weight:bold;border-left:3px solid #6b3fa0;background:#f9f5ff;animation:navPulse 1.4s ease-in-out infinite;}
+@keyframes navPulse{0%,100%{background:#f9f5ff}50%{background:#e8daff}}
+.fl-main{flex:1;padding:14px;background:#f0f0f0;overflow:hidden;}
+.fl-alert-bar{background:#fff8dc;border:1px solid #f0c000;border-radius:3px;padding:8px 12px;font-size:11px;color:#333;margin-bottom:12px;text-align:center;}
+.fl-cals{display:flex;gap:14px;margin-bottom:14px;overflow-x:auto;align-items:flex-start;}
+.fl-cal{background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px 12px;flex:1;min-width:200px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.fl-cal-title{font-size:14px;font-weight:bold;color:#333;text-align:center;margin-bottom:8px;}
+.fl-cal table{width:100%;border-collapse:collapse;font-size:11px;}
+.fl-cal th{color:#888;text-align:center;padding:3px 2px;font-weight:normal;font-size:10px;border-bottom:1px solid #eee;}
+.fl-cal td{text-align:center;padding:4px 2px;color:#444;}
+.fl-cal td.wk{background:#d6e9f8;color:#333;border-radius:2px;}
+.fl-cal td.today{border:2px solid #555;font-weight:bold;border-radius:2px;}
+.fl-cal td.empty{color:#ccc;}
+.fl-tabs{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:0;}
+.fl-tab{display:flex;align-items:center;gap:6px;padding:8px 16px;font-size:12px;cursor:pointer;border:1px solid #ccc;border-bottom:none;background:#e8e8e8;color:#555;border-radius:4px 4px 0 0;}
+.fl-tab.active{background:#2b2b2b;color:#fff;border-color:#2b2b2b;}
+.fl-tab-badge{border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;background:#777;color:#fff;}
+.fl-tab.active .fl-tab-badge{background:#4ecdc4;color:#fff;}
+.fl-tab-badge.teal{background:#4ecdc4 !important;color:#fff;}
+.fl-tab-content{background:#fff;border:1px solid #ccc;padding:10px;font-size:12px;color:#555;}
+.fl-webtime-wrap{display:flex;min-height:calc(100vh - 40px);}
+.fl-wt-main{flex:1;padding:16px;background:#f5f5f5;}
+.fl-wt-title{font-size:15px;font-weight:bold;color:#333;margin-bottom:14px;}
+.fl-wt-sheet{background:#fff;border:2px solid #333;border-radius:3px;overflow:hidden;}
+.fl-wt-toolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f0f0f0;border-bottom:1px solid #ddd;flex-wrap:wrap;gap:6px;}
+.fl-wt-select{border:1px solid #ccc;padding:4px 8px;font-size:11px;border-radius:2px;}
+.fl-wt-go{background:#5b9bd5;color:#fff;border:none;padding:4px 12px;font-size:11px;border-radius:2px;cursor:pointer;}
+.fl-wt-save{background:#2d7a3a;color:#fff;border:none;padding:6px 14px;font-size:12px;border-radius:3px;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.fl-wt-cancel{background:#fff;border:1px solid #ccc;padding:6px 12px;font-size:12px;border-radius:3px;cursor:pointer;}
+.fl-wt-table{width:100%;border-collapse:collapse;font-size:11px;}
+.fl-wt-table th{background:#dce9f7;padding:6px 8px;text-align:left;border:1px solid #ccc;color:#333;font-size:10px;}
+.fl-wt-table td{padding:6px 8px;border:1px solid #ddd;vertical-align:middle;}
+.fl-wt-input{border:1px solid #bbb;padding:4px 6px;font-size:11px;width:70px;border-radius:2px;}
+.fl-wt-input:focus{outline:2px solid #5b9bd5;border-color:#5b9bd5;}
+.fl-wt-warn{color:#f0a500;font-size:14px;}
+.fl-legend{padding:10px 12px;font-size:11px;}
+.fl-legend-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;}
+.fl-wt-actions{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #ddd;justify-content:flex-end;}
+.custom-alert-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center;}
+.custom-alert-bg.show{display:flex;}
+.custom-alert-box{background:#fff;border-radius:6px;padding:24px 20px;max-width:320px;width:90%;}
+.custom-alert-icon{font-size:28px;text-align:center;margin-bottom:10px;}
+.custom-alert-title{font-size:15px;font-weight:bold;color:#333;margin-bottom:8px;text-align:center;}
+.custom-alert-msg{font-size:13px;color:#555;line-height:1.6;margin-bottom:18px;text-align:center;}
+.custom-alert-btns{display:flex;gap:8px;justify-content:center;}
+.custom-alert-ok{background:#2d7a3a;color:#fff;border:none;border-radius:4px;padding:9px 22px;font-size:13px;cursor:pointer;font-weight:bold;}
+.custom-alert-cancel{background:#fff;border:1px solid #ccc;border-radius:4px;padding:9px 18px;font-size:13px;cursor:pointer;color:#555;}
+.fl-success{background:#f5f5f5;padding:28px 20px;text-align:center;min-height:calc(100vh - 40px);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.fl-success-icon{width:64px;height:64px;background:#2d7a3a;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px;color:#fff;}
+.fl-success h2{font-size:18px;color:#333;margin-bottom:8px;}
+.fl-success p{font-size:13px;color:#555;max-width:340px;line-height:1.6;margin-bottom:6px;}
+.fl-pay-card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:14px 18px;max-width:340px;width:100%;margin-top:12px;text-align:left;display:flex;align-items:flex-start;gap:12px;}
+.fl-pay-icon{font-size:28px;flex-shrink:0;}
+.fl-pay-title{font-size:13px;font-weight:bold;color:#2d7a3a;margin-bottom:4px;}
+.fl-pay-body{font-size:12px;color:#444;line-height:1.6;}
+.fl-pay-body strong{color:#1b4f8a;}
+.fl-call-card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:16px 20px;max-width:340px;width:100%;margin-top:12px;text-align:left;}
+.fl-call-card-title{font-size:12px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;}
+.fl-call-kelly{font-size:20px;font-weight:bold;color:#1b4f8a;display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.fl-call-instr{font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;}
+.fl-call-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#1b4f8a;color:#fff;border:none;border-radius:4px;padding:11px 20px;font-size:14px;font-weight:bold;cursor:pointer;width:100%;text-decoration:none;}
+.fl-call-script{background:#f0f7ff;border-radius:4px;padding:10px 12px;font-size:12px;color:#1b4f8a;margin-top:10px;line-height:1.6;border-left:3px solid #5b9bd5;}
+.fl-restart{margin-top:16px;font-size:12px;color:#5b9bd5;text-decoration:underline;cursor:pointer;}
+.nav-step-bar{display:flex;align-items:center;background:#1b4f8a;padding:8px 14px;gap:6px;overflow-x:auto;}
+.nav-step{font-size:10px;color:rgba(255,255,255,.6);white-space:nowrap;}
+.nav-step.active{color:#fff;font-weight:bold;}
+.nav-sep{color:rgba(255,255,255,.4);font-size:10px;}
+.footer{text-align:center;padding:16px;font-size:11px;color:#999;background:#f0f0f0;}
+</style>
+</head>
+<body>
+
+<div class="custom-alert-bg" id="break-alert">
+  <div class="custom-alert-box">
+    <div class="custom-alert-icon">⚠️</div>
+    <div class="custom-alert-title">No break or lunch time entered</div>
+    <div class="custom-alert-msg">You have not entered any break or lunch time for one or more entries.<br><br>Do you still want to save your timesheet?</div>
+    <div class="custom-alert-btns">
+      <button class="custom-alert-cancel" onclick="closeAlert()">Go back</button>
+      <button class="custom-alert-ok" onclick="confirmSave()">Yes, save anyway</button>
+    </div>
+  </div>
+</div>
+
+<div class="sim">
+
+<!-- S1: LOGIN -->
+<div class="screen active" id="s1">
+  <div class="fl-login-bg">
+    <div class="fl-logo-area">
+      <div class="fl-logo-icon">F</div>
+      <div><div class="fl-logo-text">frontline</div><span class="fl-logo-sub">education</span></div>
+    </div>
+    <div class="fl-login-card">
+      <h2>Sign in with a Frontline ID</h2>
+      <label class="fl-field-label">Frontline Username</label>
+      <input class="fl-input" type="text" id="fl-user" />
+      <label class="fl-field-label">Frontline Password</label>
+      <input class="fl-input" type="password" id="fl-pass" />
+      <button class="fl-btn-login" onclick="goTo('s2')">
+        <div style="width:16px;height:16px;background:#4ecdc4;border-radius:50% 50% 50% 0;"></div>
+        Sign In with Frontline ID
+      </button>
+      <div class="fl-links"><a>Forgot Username</a><span style="color:#ccc">|</span><a>Forgot Password</a></div>
+    </div>
+    <div class="fl-sso">Or Sign In with Organization SSO</div>
+  </div>
+</div>
+
+<!-- S2: SELECT ORG -->
+<div class="screen" id="s2">
+  <div class="fl-org-bg">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;">
+      <div class="fl-logo-icon" style="width:28px;height:28px;font-size:12px;">F</div>
+      <div style="color:#fff;font-size:13px;font-weight:bold;">frontline <span style="color:#c9b8e8;font-size:9px;">education</span></div>
+    </div>
+    <div class="fl-org-h">Select an Organization</div>
+    <div style="background:#3a1a5e;border-radius:4px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#f5d080;display:flex;align-items:flex-start;gap:8px;">
+      <span style="font-size:14px;flex-shrink:0;">👇</span>
+      <span>Select your organization below. <strong>Paraprofessionals</strong> must select <strong>FL|K12|Miami-Dade</strong>.</span>
+    </div>
+    <div class="fl-org-list">
+      <div class="fl-org-item" id="item-kelly" onclick="selectOrg('kelly')">#Kelly Southeast Substitutes</div>
+      <div class="org-notice kelly" id="notice-kelly">
+        <div class="org-notice-title">⚠️ Wrong organization for paraprofessionals</div>
+        This option is for <strong>substitute teachers only</strong>. If you are a paraprofessional, please select <strong>FL|K12|Miami-Dade</strong> below.
+      </div>
+      <div class="fl-org-item" id="item-miami" onclick="selectOrg('miami')">FL|K12|Miami-Dade</div>
+      <div class="org-notice miami" id="notice-miami">
+        <div class="org-notice-title">✅ Correct — Miami-Dade paraprofessionals</div>
+        You selected the right organization. Loading your dashboard now...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S3: LOADING -->
+<div class="screen" id="s3">
+  <div class="fl-loading">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div class="fl-logo-icon" style="width:44px;height:44px;font-size:20px;">F</div>
+      <div><div class="fl-loading-text">frontline</div><div class="fl-loading-sub">education</div></div>
+    </div>
+    <div class="fl-bars">
+      <div class="fl-bar"></div><div class="fl-bar"></div><div class="fl-bar"></div><div class="fl-bar"></div><div class="fl-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- S4: NOTIFICATION -->
+<div class="screen" id="s4">
+  <div class="fl-modal-overlay">
+    <div class="fl-notif-modal">
+      <div class="fl-notif-header">Important Notifications <span class="fl-notif-close" onclick="goTo('s5')">✕</span></div>
+      <div class="fl-notif-body">
+        <div class="fl-notif-meta">
+          <span class="fl-notif-tag">Medium</span>
+          <span style="font-size:12px;color:#333;">FL|K12|Miami-Dade</span>
+          <span class="fl-notif-date">posted on Thursday, February 12, 2026</span>
+        </div>
+        <div class="fl-notif-text">
+          <strong>Attention Substitute Teachers:</strong><br><br>
+          If you pick up a last-minute assignment and the start time has already passed, please make sure to contact the school immediately. Let them know you are on your way.<br><br>
+          <span class="hl">If you pick up your assignment in advance, or at least 2 hours before the start time,</span> please make sure to arrive according to your scheduled time as listed on the assignment.<br><br>
+          Also, remember that your scheduled end time is the time you should remain at the school, unless you are informed by school staff that you are cleared to leave earlier.<br><br>
+          Thank you for your cooperation and dedication!
+        </div>
+        <div style="background:#fff8dc;border:1px solid #f0c000;border-radius:4px;padding:10px 12px;margin-top:14px;font-size:12px;color:#555;display:flex;align-items:flex-start;gap:8px;">
+          <span style="font-size:16px;flex-shrink:0;">👆</span>
+          <span><strong>Read the information above carefully,</strong> then click <strong>Dismiss</strong> to continue to your dashboard.</span>
+        </div>
+      </div>
+      <div class="fl-notif-footer"><button class="fl-btn-dismiss" onclick="goTo('s5')">Dismiss</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- S5: DASHBOARD -->
+<div class="screen" id="s5">
+  <div class="nav-step-bar">
+    <span class="nav-step">1. Login</span><span class="nav-sep">›</span>
+    <span class="nav-step">2. Select Org</span><span class="nav-sep">›</span>
+    <span class="nav-step active">3. Dashboard</span><span class="nav-sep">›</span>
+    <span class="nav-step">4. WebTime</span>
+  </div>
+  <div class="dash-guide-banner" id="dash-banner">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="dash-guide-pulse"></div>
+      <span>You are now on your dashboard. Click <strong>WebTime</strong> in the left menu to submit your timesheet.</span>
+    </div>
+    <button class="dash-guide-dismiss" onclick="document.getElementById('dash-banner').classList.add('hidden')">Got it ✓</button>
+  </div>
+  <div class="fl-dash">
+    <div class="fl-sidebar">
+      <div class="fl-sidebar-title">NAVIGATION</div>
+      <div class="fl-nav-item active">🏠 Home</div>
+      <div class="fl-nav-item">📋 Available Jobs</div>
+      <div class="fl-nav-item">↺ History</div>
+      <div class="fl-nav-item">⚙ Preferences</div>
+      <div class="fl-nav-item pulse-nav" onclick="goTo('s6')">🕐 WebTime</div>
+    </div>
+    <div class="fl-main">
+      <div class="fl-alert-bar">You also have access to a multiple district view. <a>Click here</a> to switch to view all your substitute districts at once.</div>
+      <div class="fl-cals">
+        <div class="fl-cal">
+          <div class="fl-cal-title">April 2026</div>
+          <table><thead><tr><th>SUN</th><th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th><th>SAT</th></tr></thead><tbody>
+          <tr><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td>1</td><td>2</td><td>3</td></tr>
+          <tr><td>4</td><td class="wk">5</td><td class="wk">6</td><td class="wk">7</td><td class="wk">8</td><td class="wk">9</td><td>10</td></tr>
+          <tr><td>11</td><td class="wk">12</td><td class="wk">13</td><td class="wk">14</td><td class="wk">15</td><td class="wk">16</td><td>17</td></tr>
+          <tr><td>18</td><td class="wk">19</td><td class="wk">20</td><td class="wk">21</td><td class="wk">22</td><td class="today">23</td><td>24</td></tr>
+          <tr><td>25</td><td class="wk">26</td><td class="wk">27</td><td class="wk">28</td><td class="wk">29</td><td class="wk">30</td><td class="empty"></td></tr>
+          </tbody></table>
+        </div>
+        <div class="fl-cal">
+          <div class="fl-cal-title">May 2026</div>
+          <table><thead><tr><th>SUN</th><th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th><th>SAT</th></tr></thead><tbody>
+          <tr><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td>1</td><td>2</td></tr>
+          <tr><td>3</td><td class="wk">4</td><td class="wk">5</td><td class="wk">6</td><td class="wk">7</td><td class="wk">8</td><td>9</td></tr>
+          <tr><td>10</td><td class="wk">11</td><td class="wk">12</td><td class="wk">13</td><td class="wk">14</td><td class="wk">15</td><td>16</td></tr>
+          <tr><td>17</td><td class="wk">18</td><td class="wk">19</td><td class="wk">20</td><td class="wk">21</td><td class="wk">22</td><td>23</td></tr>
+          <tr><td>24</td><td class="wk">25</td><td class="wk">26</td><td class="wk">27</td><td class="wk">28</td><td class="wk">29</td><td>30</td></tr>
+          <tr><td>31</td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td></tr>
+          </tbody></table>
+        </div>
+        <div class="fl-cal">
+          <div class="fl-cal-title">June 2026</div>
+          <table><thead><tr><th>SUN</th><th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th><th>SAT</th></tr></thead><tbody>
+          <tr><td class="empty"></td><td class="wk">1</td><td class="wk">2</td><td class="wk">3</td><td class="wk">4</td><td class="wk">5</td><td>6</td></tr>
+          <tr><td>7</td><td class="wk">8</td><td class="wk">9</td><td class="wk">10</td><td class="wk">11</td><td class="wk">12</td><td>13</td></tr>
+          <tr><td>14</td><td class="wk">15</td><td class="wk">16</td><td class="wk">17</td><td class="wk">18</td><td class="wk">19</td><td>20</td></tr>
+          <tr><td>21</td><td class="wk">22</td><td class="wk">23</td><td class="wk">24</td><td class="wk">25</td><td class="wk">26</td><td>27</td></tr>
+          <tr><td>28</td><td class="wk">29</td><td class="wk">30</td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+      <div class="fl-tabs">
+        <div class="fl-tab active"><div class="fl-tab-badge">0</div>&nbsp;Available Jobs</div>
+        <div class="fl-tab"><div class="fl-tab-badge">0</div>&nbsp;Scheduled Jobs</div>
+        <div class="fl-tab"><div class="fl-tab-badge teal">11</div>&nbsp;Past Jobs</div>
+        <div class="fl-tab"><div class="fl-tab-badge">3</div>&nbsp;Non Work Days</div>
+      </div>
+      <div class="fl-tab-content">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="border-bottom:1px solid #ddd;">
+            <th style="text-align:left;padding:6px 8px;font-weight:normal;color:#333;width:35%;">Date</th>
+            <th style="text-align:left;padding:6px 8px;font-weight:normal;color:#333;width:20%;">Time</th>
+            <th style="text-align:left;padding:6px 8px;font-weight:normal;color:#333;width:20%;">Duration</th>
+            <th style="text-align:left;padding:6px 8px;font-weight:normal;color:#333;">Location</th>
+          </tr></thead>
+          <tbody><tr><td colspan="4" style="padding:10px 8px;color:#555;">I'm sorry. There are no available assignments at the moment. Please check back later for new postings!</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S6: WEBTIME -->
+<div class="screen" id="s6">
+  <div class="nav-step-bar">
+    <span class="nav-step">1. Login</span><span class="nav-sep">›</span>
+    <span class="nav-step">2. Select Org</span><span class="nav-sep">›</span>
+    <span class="nav-step">3. Dashboard</span><span class="nav-sep">›</span>
+    <span class="nav-step active">4. WebTime</span><span class="nav-sep">›</span>
+    <span class="nav-step">5. Done</span>
+  </div>
+  <div class="fl-webtime-wrap">
+    <div class="fl-sidebar">
+      <div class="fl-sidebar-title">NAVIGATION</div>
+      <div class="fl-nav-item">🏠 Home</div>
+      <div class="fl-nav-item">📋 Available Jobs</div>
+      <div class="fl-nav-item">↺ History</div>
+      <div class="fl-nav-item">⚙ Preferences</div>
+      <div class="fl-nav-item active">🕐 WebTime</div>
+    </div>
+    <div class="fl-wt-main">
+      <div class="fl-wt-title">Time Sheet for <strong>Monday, April 20 – Sunday, April 26, 2026</strong></div>
+      <div style="background:#e8f4e8;border:1px solid #5a9a5a;border-radius:4px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:#2d5a2d;display:flex;align-items:flex-start;gap:8px;">
+        <span style="font-size:14px;flex-shrink:0;">📝</span>
+        <span>Enter your <strong>actual start and end times</strong> for each day you worked. When done, click <strong>Save Time Sheet</strong>.</span>
+      </div>
+      <div class="fl-wt-sheet">
+        <div class="fl-wt-toolbar">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <select class="fl-wt-select"><option>4/20/2026 - 4/26/2026</option></select>
+            <button class="fl-wt-go">Go</button>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="fl-wt-cancel" onclick="goTo('s5')">Cancel</button>
+            <button class="fl-wt-save" onclick="trySave()">✓ Save Time Sheet</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="fl-wt-table">
+            <thead>
+              <tr>
+                <th style="width:28px;"></th>
+                <th>Date</th><th>Location</th><th>Employee</th>
+                <th style="font-size:9px;">Scheduled Start<br>Actual Start</th>
+                <th style="font-size:9px;">Scheduled End<br>Actual End</th>
+                <th>Break Times</th>
+                <th>Break Hrs</th><th>Total Hrs</th><th>Units</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="fl-wt-warn">△</span></td>
+                <td style="font-size:10px;">Monday<br>4/20/2026</td>
+                <td style="font-size:10px;">Kinloch Park Ms</td>
+                <td style="font-size:10px;">BONCE, CARMEN</td>
+                <td><div style="color:#aaa;font-size:9px;margin-bottom:2px;">11:15 AM</div><input class="fl-wt-input" placeholder="11:15 AM" id="s1i" oninput="calc(1)"/></td>
+                <td><div style="color:#aaa;font-size:9px;margin-bottom:2px;">2:55 PM</div><input class="fl-wt-input" placeholder="2:55 PM" id="e1i" oninput="calc(1)"/></td>
+                <td style="white-space:nowrap;"><input class="fl-wt-input" placeholder="Start" style="width:48px;" id="bs1"/> - <input class="fl-wt-input" placeholder="End" style="width:48px;" id="be1"/></td>
+                <td id="bh1">0:00</td><td id="th1" style="font-weight:bold;">0</td><td id="un1">0</td>
+              </tr>
+              <tr>
+                <td><span class="fl-wt-warn">△</span></td>
+                <td style="font-size:10px;">Tuesday<br>4/21/2026</td>
+                <td style="font-size:10px;">E.W.F. Stirrup Elem</td>
+                <td style="font-size:10px;">FLAMION, OLGA</td>
+                <td><div style="color:#aaa;font-size:9px;margin-bottom:2px;">8:20 AM</div><input class="fl-wt-input" placeholder="8:20 AM" id="s2i" oninput="calc(2)"/></td>
+                <td><div style="color:#aaa;font-size:9px;margin-bottom:2px;">3:20 PM</div><input class="fl-wt-input" placeholder="3:20 PM" id="e2i" oninput="calc(2)"/></td>
+                <td style="white-space:nowrap;"><input class="fl-wt-input" placeholder="Start" style="width:48px;" id="bs2"/> - <input class="fl-wt-input" placeholder="End" style="width:48px;" id="be2"/></td>
+                <td id="bh2">0:00</td><td id="th2" style="font-weight:bold;">0</td><td id="un2">0</td>
+              </tr>
+              <tr>
+                <td><span class="fl-wt-warn">△</span></td>
+                <td style="font-size:10px;">Wednesday<br>4/22/2026</td>
+                <td style="font-size:10px;">Howard Mcmillan Ms</td>
+                <td style="font-size:10px;">CHRISTIE, KRIZIA</td>
+                <td><div style="color:#aaa;font-size:9px;margin-bottom:2px;">8:55 AM</div><input class="fl-wt-input" placeholder="8:55 AM" id="s3i" oninput="calc(3)"/></td>
+                <td><div style="color:#aaa;font-size:9px;margin-bottom:2px;">4:05 PM</div><input class="fl-wt-input" placeholder="4:05 PM" id="e3i" oninput="calc(3)"/></td>
+                <td style="white-space:nowrap;"><input class="fl-wt-input" placeholder="Start" style="width:48px;" id="bs3"/> - <input class="fl-wt-input" placeholder="End" style="width:48px;" id="be3"/></td>
+                <td id="bh3">0:00</td><td id="th3" style="font-weight:bold;">0</td><td id="un3">0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fl-legend">
+          <div class="fl-legend-row"><span style="color:green;">✔</span><span>This submission has been approved.</span></div>
+          <div class="fl-legend-row"><span style="color:#f0a500;">△</span><span>No values have been entered for this item.</span></div>
+          <div class="fl-legend-row"><span style="color:red;">✘</span><span>Rejected and needs revision. Please contact your administrator.</span></div>
+        </div>
+        <div class="fl-wt-actions">
+          <button class="fl-wt-cancel" onclick="goTo('s5')">Cancel</button>
+          <button class="fl-wt-save" onclick="trySave()">✓ Save Time Sheet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S7: SUCCESS -->
+<div class="screen" id="s7">
+  <div class="nav-step-bar">
+    <span class="nav-step">1. Login</span><span class="nav-sep">›</span>
+    <span class="nav-step">2. Select Org</span><span class="nav-sep">›</span>
+    <span class="nav-step">3. Dashboard</span><span class="nav-sep">›</span>
+    <span class="nav-step">4. WebTime</span><span class="nav-sep">›</span>
+    <span class="nav-step active">5. Done ✓</span>
+  </div>
+  <div class="fl-success">
+    <div class="fl-success-icon">✓</div>
+    <h2>Time sheet saved!</h2>
+    <p>Your hours have been submitted for the week of April 20–26, 2026. Your administrator will review and approve your submission.</p>
+    <div class="fl-pay-card">
+      <div class="fl-pay-icon">💰</div>
+      <div>
+        <div class="fl-pay-title">When will I get paid?</div>
+        <div class="fl-pay-body">The hours you submitted <strong>this week</strong> will appear in your paycheck on <strong>Friday of next week</strong>.<br><br>Make sure to submit your timesheet <strong>every week</strong> — if you don't submit, you won't get paid for those hours.</div>
+      </div>
+    </div>
+    <div class="fl-call-card">
+      <div class="fl-call-card-title">Questions about your timesheet or pay?</div>
+      <div class="fl-call-kelly">📞 Call Kelly Education</div>
+      <div class="fl-call-instr">Call our office and ask to speak with a <strong>Talent Advisor</strong>. They will be happy to help you with any questions about your assignment, hours, or paycheck.</div>
+      <a class="fl-call-btn" href="tel:+13057778870">📞&nbsp; Call Kelly Education Miami</a>
+      <div class="fl-call-script">
+        <strong>What to say when someone answers:</strong><br>
+        "Hi, my name is [your name]. I'm a paraprofessional with Kelly Education and I'd like to speak with a Talent Advisor, please."
+      </div>
+    </div>
+    <div class="fl-restart" onclick="restart()">Start over (practice again)</div>
+  </div>
+  <div class="footer">Made with ♥ by Rodrigo Bermudez · Kelly Education Miami-Dade</div>
+</div>
+
+</div>
+
+<script>
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='s3'){setTimeout(function(){goTo('s4');},1800);}
+  if(id==='s5'){document.getElementById('dash-banner').classList.remove('hidden');}
+}
+function selectOrg(type){
+  document.getElementById('notice-miami').style.display='none';
+  document.getElementById('notice-kelly').style.display='none';
+  document.getElementById('item-miami').classList.remove('highlight');
+  document.getElementById('item-kelly').classList.remove('highlight');
+  if(type==='miami'){
+    document.getElementById('item-miami').classList.add('highlight');
+    document.getElementById('notice-miami').style.display='block';
+    setTimeout(function(){goTo('s3');},900);
+  } else {
+    document.getElementById('item-kelly').classList.add('highlight');
+    document.getElementById('notice-kelly').style.display='block';
+  }
+}
+function parseT(str){
+  if(!str)return null;
+  var m=str.trim().match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if(!m)return null;
+  var h=parseInt(m[1]),mn=parseInt(m[2]),ap=m[3].toUpperCase();
+  if(ap==='PM'&&h!==12)h+=12;
+  if(ap==='AM'&&h===12)h=0;
+  return h*60+mn;
+}
+function calc(n){
+  var s=parseT(document.getElementById('s'+n+'i').value);
+  var e=parseT(document.getElementById('e'+n+'i').value);
+  if(s!==null&&e!==null&&e>s){
+    var d=(e-s)/60;
+    document.getElementById('th'+n).textContent=d.toFixed(1);
+    document.getElementById('un'+n).textContent=d.toFixed(1);
+    document.getElementById('th'+n).style.color='#2d7a3a';
+  }
+}
+function hasBreaks(){
+  for(var i=1;i<=3;i++){
+    var s=document.getElementById('s'+i+'i').value;
+    var e=document.getElementById('e'+i+'i').value;
+    var bs=document.getElementById('bs'+i).value;
+    var be=document.getElementById('be'+i).value;
+    if(s&&e&&(!bs||!be))return false;
+  }
+  return true;
+}
+function hasTimes(){
+  for(var i=1;i<=3;i++){
+    if(document.getElementById('s'+i+'i').value&&document.getElementById('e'+i+'i').value)return true;
+  }
+  return false;
+}
+function trySave(){
+  if(!hasTimes()){alert('Please enter at least one start and end time before saving.');return;}
+  if(!hasBreaks()){document.getElementById('break-alert').classList.add('show');}
+  else{goTo('s7');}
+}
+function closeAlert(){document.getElementById('break-alert').classList.remove('show');}
+function confirmSave(){document.getElementById('break-alert').classList.remove('show');goTo('s7');}
+function restart(){
+  for(var i=1;i<=3;i++){
+    ['s','e'].forEach(function(p){document.getElementById(p+i+'i').value='';});
+    ['bs','be'].forEach(function(p){document.getElementById(p+i).value='';});
+    document.getElementById('th'+i).textContent='0';
+    document.getElementById('th'+i).style.color='';
+    document.getElementById('un'+i).textContent='0';
+  }
+  document.getElementById('fl-user').value='';
+  document.getElementById('fl-pass').value='';
+  document.getElementById('notice-miami').style.display='none';
+  document.getElementById('notice-kelly').style.display='none';
+  document.getElementById('item-miami').classList.remove('highlight');
+  document.getElementById('item-kelly').classList.remove('highlight');
+  goTo('s1');
+}
+</script>
+</body>
+</html>
